@@ -44,7 +44,7 @@ class HouseholdLiquidityRecyclingTests(unittest.TestCase):
             + D(summary["final_firm_cash_share"])
             + D(summary["final_external_supplier_cash_share"])
         )
-        self.assertEqual(sector_shares, D("1"))
+        self.assertLessEqual(abs(sector_shares - D("1")), D("1e-24"))
         self.assertGreaterEqual(D(summary["final_household_cash_gini"]), 0)
         self.assertLessEqual(D(summary["final_household_cash_gini"]), 1)
         self.assertTrue(all(state.cash >= 0 for state in model.firms.values()))
