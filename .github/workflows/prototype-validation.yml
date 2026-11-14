@@ -37,6 +37,8 @@ jobs:
         run: python prototype/io_economy.py --scenario baseline --periods 12
       - name: Run compound input-output simulation
         run: python prototype/io_economy.py --scenario compound_shock --periods 12
+      - name: Run 24-period household liquidity recycling sensitivity
+        run: python prototype/household_liquidity_recycling.py --periods 24 --rates 0,0.10,0.25,0.50 --summary-only
       - name: Run paired SCCE cellular comparison (100 seeds)
         run: python prototype/cellular_coordination.py --monte-carlo 100 --shock none --hops 1 --summary-only
       - name: Run paired SCCE cellular comparison with two-hop local reach (100 seeds)
