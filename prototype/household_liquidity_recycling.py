@@ -183,7 +183,7 @@ def main():
             scenario.pop("periods", None)
     rendered = json.dumps(result, indent=2, sort_keys=True)
     if args.output:
-        Path(args.output).write_text(rendered + "\\n", encoding="utf-8")
+        Path(args.output).write_text(rendered + chr(10), encoding="utf-8")
     print(rendered)
 
 
