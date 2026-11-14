@@ -42,6 +42,9 @@ class HouseholdLiquidityRecyclingTests(unittest.TestCase):
         self.assertTrue(all(state.cash >= 0 for state in model.households.values()))
 
         for row in model.recycling_history:
+            for firm_id, transfer in row["firm_transfers"].items():
+                positive_flow = max(D("0"), D(row["firm_net_cash_flows"][firm_id]))
+                self.assertLessEqual(D(transfer), (positive_flow * D("0.25")).quantize(D("0.01"), rounding="ROUND_DOWN"))
             paid = sum((D(value) for value in row["firm_transfers"].values()), D("0"))
             received = sum((D(value) for value in row["household_transfers"].values()), D("0"))
             self.assertEqual(paid, received)
@@ -53,6 +56,9 @@ class HouseholdLiquidityRecyclingTests(unittest.TestCase):
             household_recycling_rate=D("1"))
         model.run(3)
         for row in model.recycling_history:
+            for firm_id, transfer in row["firm_transfers"].items():
+                self.assertGreater(D(row["firm_net_cash_flows"][firm_id]), 0)
+                self.assertLessEqual(D(transfer), D(row["firm_net_cash_flows"][firm_id]))
             self.assertTrue(all(D(value) >= 0 for value in row["firm_transfers"].values()))
             self.assertTrue(all(D(value) >= 0 for value in row["household_transfers"].values()))
 
