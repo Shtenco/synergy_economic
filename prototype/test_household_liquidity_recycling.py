@@ -38,6 +38,15 @@ class HouseholdLiquidityRecyclingTests(unittest.TestCase):
         self.assertEqual(model._system_cash(), initial)
         self.assertEqual(D(model.summary()["cash_conservation_error"]), 0)
         self.assertEqual(D(model.summary()["max_abs_physical_balance_error"]), 0)
+        summary = model.summary()
+        sector_shares = (
+            D(summary["final_household_cash_share"])
+            + D(summary["final_firm_cash_share"])
+            + D(summary["final_external_supplier_cash_share"])
+        )
+        self.assertEqual(sector_shares, D("1"))
+        self.assertGreaterEqual(D(summary["final_household_cash_gini"]), 0)
+        self.assertLessEqual(D(summary["final_household_cash_gini"]), 1)
         self.assertTrue(all(state.cash >= 0 for state in model.firms.values()))
         self.assertTrue(all(state.cash >= 0 for state in model.households.values()))
 
