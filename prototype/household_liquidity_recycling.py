@@ -19,6 +19,18 @@ from typing import Iterable
 from io_economy import EconomyError, InputOutputEconomy, ZERO, cash, dec
 
 
+def _cash_gini(values):
+    ordered = sorted(dec(value) for value in values)
+    total = sum(ordered, ZERO)
+    if not ordered or total <= 0:
+        return ZERO
+    n = D(len(ordered))
+    weighted = sum(
+        (D(2 * index - len(ordered) - 1) * value
+         for index, value in enumerate(ordered, start=1)), ZERO)
+    return weighted / (n * total)
+
+
 class HouseholdLiquidityRecyclingEconomy(InputOutputEconomy):
     """IO economy with a bounded, cash-funded household recycling overlay."""
 
@@ -109,6 +121,7 @@ class HouseholdLiquidityRecyclingEconomy(InputOutputEconomy):
         total_transferred = sum(
             (dec(row["total_transferred"]) for row in self.recycling_history), ZERO)
         household_cash = sum((h.cash for h in self.households.values()), ZERO)
+        firm_cash = sum((f.cash for f in self.firms.values()), ZERO)
         result.update({
             "household_recycling_rate": str(self.household_recycling_rate),
             "cumulative_household_recycling": str(total_transferred),
@@ -116,6 +129,16 @@ class HouseholdLiquidityRecyclingEconomy(InputOutputEconomy):
                 str(household_cash / self.initial_cash)
                 if self.initial_cash > 0 else "0"
             ),
+            "final_firm_cash_share": (
+                str(firm_cash / self.initial_cash)
+                if self.initial_cash > 0 else "0"
+            ),
+            "final_external_supplier_cash_share": (
+                str(self.import_cash / self.initial_cash)
+                if self.initial_cash > 0 else "0"
+            ),
+            "final_household_cash_gini": str(_cash_gini(
+                [state.cash for state in self.households.values()])),
             "final_household_cash_by_id": {
                 key: str(state.cash) for key, state in sorted(self.households.items())
             },
