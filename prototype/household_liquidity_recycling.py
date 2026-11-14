@@ -12,7 +12,7 @@ period's household budget can use the additional cash. No money is created.
 from __future__ import annotations
 
 import json
-from decimal import Decimal as D
+from decimal import Decimal as D, ROUND_DOWN
 from hashlib import sha256
 from typing import Iterable
 
@@ -36,6 +36,7 @@ class HouseholdLiquidityRecyclingEconomy(InputOutputEconomy):
         result = super().step(period)
 
         firm_transfers = {}
+        firm_net_cash_flows = {}
         household_transfers = {household_id: ZERO
                                for household_id in self.households}
         households = [self.households[key] for key in sorted(self.households)]
@@ -44,9 +45,13 @@ class HouseholdLiquidityRecyclingEconomy(InputOutputEconomy):
         if self.household_recycling_rate > 0 and households:
             for firm_id, state in sorted(self.firms.items()):
                 net_cash_flow = state.cash - opening_firm_cash[firm_id]
+                firm_net_cash_flows[firm_id] = net_cash_flow
                 if net_cash_flow <= 0:
                     continue
-                proposed = cash(net_cash_flow * self.household_recycling_rate)
+                # Round down so the transfer can never exceed the configured
+                # share of the actual positive cash flow, even at sub-cent scale.
+                proposed = (net_cash_flow * self.household_recycling_rate).quantize(
+                    D("0.01"), rounding=ROUND_DOWN)
                 transfer = min(proposed, state.cash)
                 if transfer <= 0:
                     continue
@@ -66,6 +71,8 @@ class HouseholdLiquidityRecyclingEconomy(InputOutputEconomy):
             self._event(f"p{period}:between-period-household-recycling",
                         "between_period_household_recycling", {
                 "rate": str(self.household_recycling_rate),
+                "firm_net_cash_flows": {key: str(value)
+                                        for key, value in sorted(firm_net_cash_flows.items())},
                 "firm_transfers": {key: str(value)
                                    for key, value in sorted(firm_transfers.items())},
                 "household_transfers": {key: str(value)
@@ -84,6 +91,8 @@ class HouseholdLiquidityRecyclingEconomy(InputOutputEconomy):
         self.recycling_history.append({
             "period": period,
             "rate": str(self.household_recycling_rate),
+            "firm_net_cash_flows": {key: str(value)
+                                    for key, value in sorted(firm_net_cash_flows.items())},
             "firm_transfers": {key: str(value)
                                for key, value in sorted(firm_transfers.items())},
             "household_transfers": {key: str(value)
