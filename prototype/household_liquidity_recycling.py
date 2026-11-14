@@ -159,3 +159,33 @@ def run_recycling_sensitivity(periods: int = 12,
         ),
         "scenarios": rows,
     }
+
+def main():
+    import argparse
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(
+        description="SYNERGY household liquidity-recycling sensitivity experiment")
+    parser.add_argument("--periods", type=int, default=24)
+    parser.add_argument("--rates", default="0,0.10,0.25,0.50",
+                        help="comma-separated rates in [0,1]")
+    parser.add_argument("--summary-only", action="store_true")
+    parser.add_argument("--output", default="")
+    args = parser.parse_args()
+    try:
+        rates = tuple(D(value.strip()) for value in args.rates.split(",")
+                      if value.strip())
+    except Exception as exc:
+        raise EconomyError("rates must be comma-separated decimal values") from exc
+    result = run_recycling_sensitivity(args.periods, rates)
+    if args.summary_only:
+        for scenario in result["scenarios"]:
+            scenario.pop("periods", None)
+    rendered = json.dumps(result, indent=2, sort_keys=True)
+    if args.output:
+        Path(args.output).write_text(rendered + "\\n", encoding="utf-8")
+    print(rendered)
+
+
+if __name__ == "__main__":
+    main()
